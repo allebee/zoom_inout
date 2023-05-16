@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script>
+        document.addEventListener("DOMContentLoaded", function (event) {
+            var ws = new WebSocket("ws://" + document.location.host + "/ws");
+            var imgElement = document.getElementById("camera-feed");
+
+            ws.onmessage = function (event) {
+                imgElement.src = "data:image/jpeg;base64," + event.data;
+            };
+        });
+    </script>
+</head>
+
+<body>
+    <img id="camera-feed" />
+</body>
+
+</html>
