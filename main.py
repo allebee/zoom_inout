@@ -122,7 +122,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/")
 async def get():
-    with open("/Users/alibiserikbay/Developer/dev/static/index.html") as file:
+    with open("static/index.html") as file:
         content = file.read()
 
     return HTMLResponse(content)
