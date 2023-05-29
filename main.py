@@ -1,17 +1,9 @@
-
-
-from fastapi import FastAPI, WebSocket
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 import cv2
 import numpy as np
-import base64
-import asyncio
 import cv2
 import dlib
 import numpy as np
 from imutils import face_utils
-import uvicorn
 from flask import Flask, Response
 
 app = Flask(__name__)
