@@ -5,7 +5,7 @@
     <title>Liveness Check</title>
     <script>
         document.addEventListener("DOMContentLoaded", function (event) {
-            var ws = new WebSocket("ws://" + document.location.host + "/ws");
+            var ws = new WebSocket("ws://3.235.16.117:8000/ws");
             var imgElement = document.getElementById("camera-feed");
 
             ws.onmessage = function (event) {
