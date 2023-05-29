@@ -1,3 +1,5 @@
+
+
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -10,8 +12,9 @@ import dlib
 import numpy as np
 from imutils import face_utils
 import uvicorn
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+from flask import Flask, Response
+
+app = Flask(__name__)
 
 # Define the oval region for face positioning
 global width, height
@@ -103,29 +106,33 @@ def capture_frames(center, text):
         image = cv2.putText(frame, text, coordinates, font,
                             fontScale, color, thickness, cv2.LINE_AA)
         _, buffer = cv2.imencode('.jpg', image)
-        frame_encoded = base64.b64encode(buffer).decode('utf-8')
-
-        yield frame_encoded
+        # Yield the JPEG frame as bytes
+        frame_bytes = buffer.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
     cap.release()
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-
-    for frame_encoded in capture_frames(oval_center, text):
-        await websocket.send_text(frame_encoded)
-        await asyncio.sleep(0.03)  # Adjust the delay between frames as needed
-
-    await websocket.close()
+@app.route('/video_feed')
+def video_feed():
+    # Return the response with the streaming content
+    return Response(capture_frames(oval_center, text),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@app.get("/")
-async def get():
-    with open("static/index.html") as file:
-        content = file.read()
+@app.route('/')
+def index():
+    return '''<!doctype html>
+              <html>
+                <head>
+                  <title>Liveness Check</title>
+                </head>
+                <body>
+                  <h1>Video Streaming</h1>
+                  <img src="/video_feed" width="640" height="480">
+                </body>
+              </html>'''
 
-    return HTMLResponse(content)
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000)
+if __name__ == '__main__':
+    app.run()
