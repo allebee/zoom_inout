@@ -1,22 +1,47 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 
 <head>
     <title>Liveness Check</title>
-    <script>
-        document.addEventListener("DOMContentLoaded", function (event) {
-            var ws = new WebSocket("ws://3.235.16.117:8000/ws");
-            var imgElement = document.getElementById("camera-feed");
-
-            ws.onmessage = function (event) {
-                imgElement.src = "data:image/jpeg;base64," + event.data;
-            };
-        });
-    </script>
 </head>
 
 <body>
-    <img id="camera-feed" />
+    <h1>Video Streaming</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <script type="text/javascript">
+        var video = document.getElementById('video');
+
+        // Request access to the camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function (stream) {
+                video.srcObject = stream;
+
+                // Send video stream to Flask server for processing
+                var sendVideoStream = function () {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                    var frame = canvas.toDataURL('image/jpeg', 0.8);
+
+                    fetch('/video_feed', {
+                        method: 'POST',
+                        body: frame
+                    })
+                        .catch(function (error) {
+                            console.log('Error sending video frame: ', error);
+                        });
+
+                    // Repeat the process for the next frame
+                    requestAnimationFrame(sendVideoStream);
+                };
+
+                sendVideoStream();
+            })
+            .catch(function (error) {
+                console.log('Error accessing camera: ', error);
+            });
+    </script>
 </body>
 
 </html>
