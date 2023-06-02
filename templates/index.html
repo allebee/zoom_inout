@@ -7,40 +7,53 @@
 
 <body>
     <h1>Video Streaming</h1>
-    <video id="video" width="640" height="480" autoplay></video>
+    <img id="bwImage" width="640" height="480">
     <script type="text/javascript">
-        var video = document.getElementById('video');
+        var bwImage = document.getElementById('bwImage');
 
-        // Request access to the camera
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function (stream) {
-                video.srcObject = stream;
+        // Send video stream to Flask server for processing
+        var sendVideoStream = function () {
+            var canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
 
-                // Send video stream to Flask server for processing
-                var sendVideoStream = function () {
-                    var canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                    var frame = canvas.toDataURL('image/jpeg', 0.8);
+            var video = document.createElement('video');
+            video.width = 640;
+            video.height = 480;
+            video.autoplay = true;
 
-                    fetch('/video_feed', {
-                        method: 'POST',
-                        body: frame
-                    })
-                        .catch(function (error) {
-                            console.log('Error sending video frame: ', error);
-                        });
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                    video.onloadedmetadata = function () {
+                        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                        var frame = canvas.toDataURL('image/jpeg', 0.8);
 
-                    // Repeat the process for the next frame
-                    requestAnimationFrame(sendVideoStream);
-                };
+                        fetch('/video_feed', {
+                            method: 'POST',
+                            body: frame
+                        })
+                            .then(function (response) {
+                                return response.blob();
+                            })
+                            .then(function (blob) {
+                                var url = URL.createObjectURL(blob);
+                                bwImage.src = url;
+                            })
+                            .catch(function (error) {
+                                console.log('Error sending video frame: ', error);
+                            });
 
-                sendVideoStream();
-            })
-            .catch(function (error) {
-                console.log('Error accessing camera: ', error);
-            });
+                        // Repeat the process for the next frame
+                        requestAnimationFrame(sendVideoStream);
+                    };
+                })
+                .catch(function (error) {
+                    console.log('Error accessing camera: ', error);
+                });
+        };
+
+        sendVideoStream();
     </script>
 </body>
 
